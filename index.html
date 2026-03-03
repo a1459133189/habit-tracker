@@ -284,8 +284,8 @@
     max-width: 393px;
     padding: 0 16px 12px;
     z-index: 40;
-    pointer-events: none;
     transition: transform 0.3s ease, opacity 0.3s ease;
+    /* 不用pointer-events:none，直接让内容撑开点击区 */
   }
 
   .bottom-bar.hidden {
@@ -298,7 +298,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    pointer-events: all;
   }
 
   .bubble-tabs {
@@ -344,8 +343,8 @@
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    pointer-events: all;
     transition: transform 0.12s;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .bubble-search-icon:active { transform: scale(0.92); }
@@ -360,7 +359,6 @@
     border-radius: 32px;
     padding: 11px 16px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.10);
-    pointer-events: all;
     width: 100%;
   }
 
@@ -538,16 +536,24 @@
     left: 50%;
     transform: translateX(-50%) translateY(10px);
     background: #111; color: #fff;
-    font-size: 13px; padding: 10px 20px;
-    border-radius: 20px;
+    font-size: 13px; padding: 12px 20px;
+    border-radius: 24px;
     opacity: 0;
     transition: opacity 0.3s, transform 0.3s;
     pointer-events: none;
     white-space: nowrap;
     z-index: 60;
+    max-width: calc(100% - 48px);
+    white-space: normal;
+    text-align: center;
+    line-height: 1.5;
   }
 
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: all;
+  }
 
   /* 动画 */
   @keyframes row-in {
@@ -641,7 +647,7 @@
       <span class="tab" onclick="filterTime(event,'afternoon')">下午</span>
       <span class="tab" onclick="filterTime(event,'evening')">晚上</span>
     </div>
-    <button class="bubble-search-icon" onclick="openInlineSearch()">
+    <button class="bubble-search-icon" id="searchIconBtn">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
   </div>
@@ -756,7 +762,7 @@
     const circ = 138.2;
     document.getElementById('circleFill').style.strokeDashoffset = circ * (1 - pct);
     document.getElementById('progressPct').textContent = Math.round(pct*100) + '%';
-    if (total > 0 && done === total) showToast('全部完成 ✦');
+    if (total > 0 && done === total) showToast('全部完成 ✦ 点击生成今日日签', true);
   }
 
   function toggle(hid, time) {
@@ -820,10 +826,25 @@
     });
   }
 
+  // ── 搜索按钮：同时绑定 touchend 和 click，iOS 更可靠 ──
+  (function() {
+    const btn = document.getElementById('searchIconBtn');
+    btn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      openInlineSearch();
+    }, { passive: false });
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openInlineSearch();
+    });
+  })();
+
   // ── 搜索 ──
   let searchActive = false;
 
   function openInlineSearch() {
+    if (searchActive) return;
     searchActive = true;
     document.getElementById('bubblesDefault').style.display = 'none';
     document.getElementById('searchExpanded').style.display = 'flex';
@@ -840,20 +861,13 @@
     document.getElementById('inlineResults').classList.remove('show');
   }
 
-  document.addEventListener('touchstart', e => {
-    if (!searchActive) return;
-    const expanded = document.getElementById('searchExpanded');
-    const results = document.getElementById('inlineResults');
-    if (!expanded.contains(e.target) && !results.contains(e.target)) {
-      closeInlineSearch();
-    }
-  }, { passive: true });
-
+  // 点击外部关闭：只监听 click，不用 touchstart
   document.addEventListener('click', e => {
     if (!searchActive) return;
     const expanded = document.getElementById('searchExpanded');
     const results = document.getElementById('inlineResults');
-    if (!expanded.contains(e.target) && !results.contains(e.target)) {
+    const btn = document.getElementById('searchIconBtn');
+    if (!expanded.contains(e.target) && !results.contains(e.target) && !btn.contains(e.target)) {
       closeInlineSearch();
     }
   });
@@ -988,10 +1002,13 @@
     link.click();
   }
 
-  function showToast(msg) {
+  function showToast(msg, clickable = false) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'), 2000);
+    t.textContent = msg;
+    t.style.cursor = clickable ? 'pointer' : 'default';
+    t.onclick = clickable ? () => { t.classList.remove('show'); openShare(); } : null;
+    t.classList.add('show');
+    if (!clickable) setTimeout(() => t.classList.remove('show'), 2000);
   }
 
   render();
