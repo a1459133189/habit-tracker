@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>习惯</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html {
+    background: #f0f0f0;
+  }
+
+  body {
+    background: #f0f0f0;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-weight: 300;
+    color: #111;
+    /* 不锁死overflow，让Safari正常滚动 */
+  }
+
+  /* ── 外层：窄屏居中容器 ── */
+  .app-wrap {
+    width: 100%;
+    max-width: 393px;
+    margin: 0 auto;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    background: #fff;
+    box-shadow: 0 0 40px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── 顶部固定区 ── */
+  .fixed-top {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: #fff;
+    flex-shrink: 0;
+  }
+
+  .header {
+    padding: 52px 28px 24px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .date-small {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 5px;
+  }
+
+  .header h1 {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 38px;
+    font-weight: 400;
+    color: #111;
+    line-height: 1;
+  }
+
+  .progress-ring-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .progress-circle {
+    width: 52px;
+    height: 52px;
+    transform: rotate(-90deg);
+  }
+
+  .circle-bg { fill: none; stroke: #f0f0f0; stroke-width: 3; }
+
+  .circle-fill {
+    fill: none;
+    stroke: #111;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 138.2;
+    stroke-dashoffset: 138.2;
+    transition: stroke-dashoffset 0.6s ease;
+  }
+
+  .progress-pct {
+    font-size: 11px;
+    color: #999;
+  }
+
+  /* 添加栏 */
+  .add-section {
+    padding: 16px 28px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .add-section input {
+    flex: 1;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 300;
+    color: #111;
+    background: none;
+    border: none;
+    outline: none;
+    border-bottom: 1px solid #e8e8e8;
+    padding: 4px 0;
+    transition: border-color 0.2s;
+  }
+
+  .add-section input:focus { border-bottom-color: #111; }
+  .add-section input::placeholder { color: #ccc; }
+
+  .add-section select {
+    font-family: inherit;
+    font-size: 13px;
+    color: #666;
+    background: none;
+    border: none;
+    outline: none;
+  }
+
+  .add-icon-btn {
+    width: 30px; height: 30px;
+    background: #111;
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+
+  .add-icon-btn:active { transform: scale(0.92); }
+
+  /* ── 可滚动内容区 ── */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* 底部留出足够空间：悬浮栏高度 + safe area + 额外间距 */
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 20px));
+  }
+
+  .section { padding: 0 28px; }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #bbb;
+    font-weight: 500;
+    padding: 24px 0 12px;
+  }
+
+  /* 习惯行 */
+  .habit-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f5f5f5;
+    cursor: pointer;
+  }
+
+  .habit-row:last-child { border-bottom: none; }
+  .habit-row:active { opacity: 0.6; }
+
+  .check {
+    width: 22px; height: 22px;
+    border: 1.5px solid #ddd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .habit-row.done .check { background: #111; border-color: #111; }
+
+  .check-mark {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .habit-row.done .check-mark { opacity: 1; }
+
+  .habit-main { flex: 1; min-width: 0; }
+
+  .habit-name {
+    font-size: 17px;
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s;
+  }
+
+  .habit-row.done .habit-name {
+    color: #bbb;
+    text-decoration: line-through;
+    text-decoration-color: #ccc;
+  }
+
+  .habit-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+  }
+
+  .habit-emoji { font-size: 13px; opacity: 0.6; }
+
+  .streak { font-size: 12px; color: #ccc; }
+  .streak.active { color: #111; }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    font-size: 18px;
+    padding: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .empty { font-size: 14px; color: #e0e0e0; padding: 12px 0; }
+
+  /* 日签入口 */
+  .sign-row {
+    text-align: center;
+    padding: 28px 0 20px;
+    margin: 8px 28px 0;
+    border-top: 1px solid #f5f5f5;
+  }
+
+  .sign-row button {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    color: #ccc;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    padding: 8px 16px;
+    min-height: 44px; /* iOS最小点击区域 */
+  }
+
+  /* ── 底部悬浮栏 ── */
+  .bottom-bar {
+    position: fixed;
+    /* 关键：固定在视口底部，不受Safari工具栏影响 */
+    bottom: env(safe-area-inset-bottom, 0px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 393px;
+    padding: 0 16px 16px;
+    z-index: 40;
+    pointer-events: none;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  .bottom-bar.hidden {
+    transform: translateX(-50%) translateY(120%);
+    opacity: 0;
+  }
+
+  /* 双气泡容器 */
+  .bubbles-default {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: all;
+  }
+
+  .bubble-tabs {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 32px;
+    padding: 8px 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+  }
+
+  .tab {
+    font-size: 12px;
+    color: #bbb;
+    padding: 5px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    transition: all 0.18s;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+  }
+
+  .tab.active {
+    color: #111;
+    background: #f4f4f4;
+    border-color: #e8e8e8;
+  }
+
+  .bubble-search-icon {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    pointer-events: all;
+    transition: transform 0.12s;
+  }
+
+  .bubble-search-icon:active { transform: scale(0.92); }
+
+  /* 搜索展开态 */
+  .search-expanded {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 32px;
+    padding: 11px 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    pointer-events: all;
+    width: 100%;
+  }
+
+  .search-expanded input {
+    flex: 1;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 300;
+    color: #111;
+    background: none;
+    border: none;
+    outline: none;
+    min-width: 0;
+  }
+
+  .search-expanded input::placeholder { color: #ccc; }
+
+  .search-close-btn {
+    background: none;
+    border: none;
+    color: #bbb;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+    min-height: 32px;
+  }
+
+  /* 搜索结果浮层 */
+  .inline-results {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 361px;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    background: #fff;
+    border: 1px solid #efefef;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    max-height: 50vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: none;
+    z-index: 45;
+  }
+
+  .inline-results.show { display: block; }
+
+  .inline-result-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f8f8f8;
+    cursor: pointer;
+    min-height: 56px;
+  }
+
+  .inline-result-row:last-child { border-bottom: none; }
+  .inline-result-row:active { background: #fafafa; }
+
+  .inline-result-row .r-emoji { font-size: 18px; }
+  .inline-result-row .r-info { flex: 1; min-width: 0; }
+
+  .inline-result-row .r-name {
+    font-size: 15px;
+    font-weight: 400;
+    color: #111;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inline-result-row.done .r-name { color: #bbb; text-decoration: line-through; }
+  .inline-result-row .r-name mark { background: #f0f0f0; border-radius: 2px; padding: 0 1px; }
+  .inline-result-row .r-tag { font-size: 12px; color: #ccc; margin-top: 2px; }
+  .inline-result-row .r-dot { width: 7px; height: 7px; border-radius: 50%; background: #111; opacity: 0; flex-shrink: 0; }
+  .inline-result-row.done .r-dot { opacity: 1; }
+  .inline-no-result { font-size: 13px; color: #ccc; text-align: center; padding: 20px; }
+
+  /* ── Overlay (日签) ── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+
+  .overlay.open { opacity: 1; pointer-events: all; }
+
+  .sheet {
+    width: 100%;
+    max-width: 393px;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+    transform: translateY(24px);
+    transition: transform 0.28s cubic-bezier(.2,.8,.3,1);
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .overlay.open .sheet { transform: translateY(0); }
+
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    font-size: 12px;
+    color: #999;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .close-btn {
+    background: none; border: none;
+    color: #ccc; font-size: 18px;
+    cursor: pointer; padding: 4px;
+    min-height: 32px;
+  }
+
+  /* 日签卡片 */
+  .card-preview {
+    background: #fafafa;
+    border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 14px;
+  }
+
+  .card-date-line { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #bbb; margin-bottom: 10px; }
+  .card-title { font-family: 'DM Serif Display', Georgia, serif; font-size: 20px; color: #111; margin-bottom: 4px; }
+  .card-subtitle { font-size: 12px; color: #aaa; margin-bottom: 16px; }
+  .card-divider { height: 1px; background: #efefef; margin-bottom: 14px; }
+  .card-habit-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .card-habit-item { display: flex; align-items: center; gap: 10px; }
+  .card-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .card-dot.done { background: #111; }
+  .card-dot.undone { background: #e0e0e0; }
+  .card-habit-name { font-size: 13px; color: #333; font-weight: 300; }
+  .card-habit-name.undone { color: #ccc; }
+  .card-habit-streak { margin-left: auto; font-size: 11px; color: #bbb; }
+  .card-footer { display: flex; justify-content: space-between; align-items: flex-end; }
+  .card-summary-big { font-family: 'DM Serif Display', Georgia, serif; font-size: 32px; color: #111; line-height: 1; }
+  .card-summary-label { font-size: 11px; color: #bbb; margin-top: 4px; }
+  .card-watermark { font-size: 10px; color: #ddd; text-align: right; line-height: 1.6; }
+
+  .download-btn {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: #111; color: #fff;
+    border: none; border-radius: 10px;
+    padding: 16px;
+    font-family: inherit; font-size: 15px;
+    cursor: pointer;
+    min-height: 52px;
+  }
+
+  .download-btn:active { background: #333; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: #111; color: #fff;
+    font-size: 13px; padding: 10px 20px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 60;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* 动画 */
+  @keyframes row-in {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .habit-row { animation: row-in 0.2s ease both; }
+
+  @keyframes check-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.22); }
+    100% { transform: scale(1); }
+  }
+
+  .habit-row.just-checked .check { animation: check-pop 0.3s ease; }
+</style>
+</head>
+<body>
+
+<div class="app-wrap">
+
+  <!-- 固定顶部 -->
+  <div class="fixed-top">
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="date-small" id="dateSmall"></div>
+          <h1>习惯</h1>
+        </div>
+        <div class="progress-ring-wrap">
+          <svg class="progress-circle" viewBox="0 0 52 52">
+            <circle class="circle-bg" cx="26" cy="26" r="22"/>
+            <circle class="circle-fill" id="circleFill" cx="26" cy="26" r="22"/>
+          </svg>
+          <div class="progress-pct" id="progressPct">0%</div>
+        </div>
+      </div>
+    </div>
+    <div class="add-section">
+      <input id="habitInput" type="text" placeholder="添加习惯…" maxlength="20">
+      <select id="timeSelect">
+        <option value="morning">上午</option>
+        <option value="afternoon">下午</option>
+        <option value="evening">晚上</option>
+      </select>
+      <select id="emojiSelect">
+        <option>📖</option><option>🏃</option><option>💧</option><option>🧘</option>
+        <option>✍️</option><option>🎨</option><option>🎵</option><option>🥗</option>
+        <option>💊</option><option>🌿</option><option>💪</option><option>🛏️</option>
+      </select>
+      <button class="add-icon-btn" onclick="addHabit()">+</button>
+    </div>
+  </div>
+
+  <!-- 可滚动区域 -->
+  <div class="scroll-area" id="scrollArea">
+    <div class="section" id="sec-morning">
+      <div class="section-label">上午</div>
+      <div id="morningList"></div>
+    </div>
+    <div class="section" id="sec-afternoon">
+      <div class="section-label">下午</div>
+      <div id="afternoonList"></div>
+    </div>
+    <div class="section" id="sec-evening">
+      <div class="section-label">晚上</div>
+      <div id="eveningList"></div>
+    </div>
+    <div class="sign-row">
+      <button onclick="openShare()">点击生成日签</button>
+    </div>
+  </div>
+
+</div><!-- /app-wrap -->
+
+<!-- 搜索结果（fixed定位，脱离app-wrap） -->
+<div class="inline-results" id="inlineResults"></div>
+
+<!-- 底部悬浮栏（fixed定位） -->
+<div class="bottom-bar" id="bottomBar">
+  <div class="search-expanded" id="searchExpanded">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="inlineSearchInput" type="text" placeholder="输入关键词搜索习惯" oninput="doInlineSearch()" autocomplete="off">
+    <button class="search-close-btn" onclick="closeInlineSearch()">✕</button>
+  </div>
+  <div class="bubbles-default" id="bubblesDefault">
+    <div class="bubble-tabs">
+      <span class="tab active" onclick="filterTime(event,'all')">全部</span>
+      <span class="tab" onclick="filterTime(event,'morning')">上午</span>
+      <span class="tab" onclick="filterTime(event,'afternoon')">下午</span>
+      <span class="tab" onclick="filterTime(event,'evening')">晚上</span>
+    </div>
+    <button class="bubble-search-icon" onclick="openInlineSearch()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- 日签浮层 -->
+<div class="overlay" id="shareOverlay" onclick="closeShare()">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-header">
+      <span>今日日签</span>
+      <button class="close-btn" onclick="closeShare()">✕</button>
+    </div>
+    <div class="card-preview" id="cardPreview"></div>
+    <button class="download-btn" onclick="downloadCard()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      保存图片
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<canvas id="cardCanvas" style="display:none"></canvas>
+
+<script>
+  // ── 数据 ──
+  const habits = { morning: [], afternoon: [], evening: [] };
+  let uid = 0;
+
+  [
+    { time: 'morning',   name: '喝一杯水', emoji: '💧', streak: 3 },
+    { time: 'morning',   name: '晨间冥想', emoji: '🧘', streak: 7 },
+    { time: 'afternoon', name: '午后散步', emoji: '🏃', streak: 1 },
+    { time: 'evening',   name: '睡前阅读', emoji: '📖', streak: 12 },
+  ].forEach(h => habits[h.time].push({ id: uid++, ...h, done: false }));
+
+  // ── 日期 ──
+  (function() {
+    const d = new Date();
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    document.getElementById('dateSmall').textContent =
+      `${days[d.getDay()]}  ${months[d.getMonth()]} ${d.getDate()}`;
+  })();
+
+  // ── 渲染 ──
+  function render() {
+    ['morning','afternoon','evening'].forEach(t => {
+      const el = document.getElementById(t + 'List');
+      const arr = habits[t];
+      if (!arr.length) {
+        el.innerHTML = '<div class="empty">—</div>';
+        return;
+      }
+      el.innerHTML = arr.map(h => `
+        <div class="habit-row ${h.done?'done':''}" id="row-${h.id}" onclick="toggle(${h.id},'${t}')">
+          <div class="check"><div class="check-mark"></div></div>
+          <div class="habit-main">
+            <div class="habit-name">${h.name}</div>
+            <div class="habit-meta">
+              <span class="habit-emoji">${h.emoji}</span>
+              <span class="streak ${h.streak>0?'active':''}">${h.streak>0 ? h.streak+' 天连续' : '今天开始'}</span>
+            </div>
+          </div>
+          <button class="del-btn" onclick="event.stopPropagation(); delHabit(${h.id},'${t}')">×</button>
+        </div>`).join('');
+    });
+    updateProgress();
+  }
+
+  function allHabits() {
+    return [
+      ...habits.morning.map(h=>({...h,time:'morning'})),
+      ...habits.afternoon.map(h=>({...h,time:'afternoon'})),
+      ...habits.evening.map(h=>({...h,time:'evening'})),
+    ];
+  }
+
+  function updateProgress() {
+    const all = allHabits();
+    const total = all.length, done = all.filter(h=>h.done).length;
+    const pct = total ? done/total : 0;
+    const circ = 138.2;
+    document.getElementById('circleFill').style.strokeDashoffset = circ * (1 - pct);
+    document.getElementById('progressPct').textContent = Math.round(pct*100) + '%';
+    if (total > 0 && done === total) showToast('全部完成 ✦');
+  }
+
+  function toggle(hid, time) {
+    const h = habits[time].find(x=>x.id===hid);
+    if (!h) return;
+    h.done = !h.done;
+    h.streak = h.done ? h.streak+1 : Math.max(0, h.streak-1);
+    render();
+    if (h.done) {
+      const row = document.getElementById('row-'+hid);
+      if (row) { row.classList.add('just-checked'); setTimeout(()=>row.classList.remove('just-checked'), 400); }
+    }
+  }
+
+  function delHabit(hid, time) {
+    habits[time] = habits[time].filter(x=>x.id!==hid);
+    render();
+  }
+
+  function addHabit() {
+    const input = document.getElementById('habitInput');
+    const name = input.value.trim();
+    if (!name) { input.focus(); return; }
+    const time = document.getElementById('timeSelect').value;
+    const emoji = document.getElementById('emojiSelect').value;
+    habits[time].push({ id: uid++, name, emoji, done: false, streak: 0 });
+    input.value = '';
+    render();
+  }
+
+  document.getElementById('habitInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addHabit();
+  });
+
+  // ── 滚动隐藏底栏 ──
+  let lastScrollY = 0, scrollTimer = null;
+  document.getElementById('scrollArea').addEventListener('scroll', function() {
+    const y = this.scrollTop;
+    const bar = document.getElementById('bottomBar');
+    if (y > lastScrollY + 6) {
+      bar.classList.add('hidden');
+    } else if (y < lastScrollY - 6) {
+      bar.classList.remove('hidden');
+    }
+    lastScrollY = y;
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => bar.classList.remove('hidden'), 500);
+  }, { passive: true });
+
+  // ── 筛选 ──
+  let currentFilter = 'all';
+
+  function filterTime(e, time) {
+    e.stopPropagation();
+    currentFilter = time;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    ['morning','afternoon','evening'].forEach(t => {
+      document.getElementById('sec-'+t).style.display =
+        (currentFilter==='all' || currentFilter===t) ? '' : 'none';
+    });
+  }
+
+  // ── 搜索 ──
+  let searchActive = false;
+
+  function openInlineSearch() {
+    searchActive = true;
+    document.getElementById('bubblesDefault').style.display = 'none';
+    document.getElementById('searchExpanded').style.display = 'flex';
+    document.getElementById('bottomBar').classList.remove('hidden');
+    setTimeout(() => document.getElementById('inlineSearchInput').focus(), 100);
+    doInlineSearch();
+  }
+
+  function closeInlineSearch() {
+    searchActive = false;
+    document.getElementById('inlineSearchInput').value = '';
+    document.getElementById('searchExpanded').style.display = 'none';
+    document.getElementById('bubblesDefault').style.display = 'flex';
+    document.getElementById('inlineResults').classList.remove('show');
+  }
+
+  document.addEventListener('touchstart', e => {
+    if (!searchActive) return;
+    const expanded = document.getElementById('searchExpanded');
+    const results = document.getElementById('inlineResults');
+    if (!expanded.contains(e.target) && !results.contains(e.target)) {
+      closeInlineSearch();
+    }
+  }, { passive: true });
+
+  document.addEventListener('click', e => {
+    if (!searchActive) return;
+    const expanded = document.getElementById('searchExpanded');
+    const results = document.getElementById('inlineResults');
+    if (!expanded.contains(e.target) && !results.contains(e.target)) {
+      closeInlineSearch();
+    }
+  });
+
+  function doInlineSearch() {
+    const q = document.getElementById('inlineSearchInput').value.trim().toLowerCase();
+    const labels = { morning:'上午', afternoon:'下午', evening:'晚上' };
+    const list = allHabits();
+    const filtered = q ? list.filter(h=>h.name.toLowerCase().includes(q)) : list;
+    const el = document.getElementById('inlineResults');
+    if (!filtered.length) {
+      el.innerHTML = '<div class="inline-no-result">没有找到匹配的习惯</div>';
+    } else {
+      el.innerHTML = filtered.map(h => {
+        const name = q ? h.name.replace(new RegExp(q,'gi'), m=>`<mark>${m}</mark>`) : h.name;
+        return `<div class="inline-result-row ${h.done?'done':''}" onclick="selectResult('${h.time}',${h.id})">
+          <span class="r-emoji">${h.emoji}</span>
+          <div class="r-info">
+            <div class="r-name">${name}</div>
+            <div class="r-tag">${labels[h.time]} · ${h.streak>0 ? h.streak+' 天连续':'今天开始'}</div>
+          </div>
+          <div class="r-dot"></div>
+        </div>`;
+      }).join('');
+    }
+    el.classList.add('show');
+  }
+
+  function selectResult(time, hid) {
+    closeInlineSearch();
+    currentFilter = time;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const idx = { all:0, morning:1, afternoon:2, evening:3 }[time];
+    document.querySelectorAll('.tab')[idx]?.classList.add('active');
+    ['morning','afternoon','evening'].forEach(t => {
+      document.getElementById('sec-'+t).style.display = t===time ? '' : 'none';
+    });
+    setTimeout(() => {
+      const row = document.getElementById('row-'+hid);
+      if (row) row.scrollIntoView({ behavior:'smooth', block:'center' });
+    }, 120);
+  }
+
+  // ── 日签 ──
+  function openShare() {
+    buildCardPreview();
+    document.getElementById('shareOverlay').classList.add('open');
+  }
+
+  function closeShare() {
+    document.getElementById('shareOverlay').classList.remove('open');
+  }
+
+  function getDateInfo() {
+    const d = new Date();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    return {
+      d,
+      dateStr: `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
+      cnDate: `${d.getMonth()+1} 月 ${d.getDate()} 日`,
+    };
+  }
+
+  function buildCardPreview() {
+    const list = allHabits();
+    const total = list.length, done = list.filter(h=>h.done).length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const { dateStr, cnDate } = getDateInfo();
+    const mood = pct===100?'全部完成 ✦':pct>=60?'进展不错':pct>0?'已经开始':'今天加油';
+    document.getElementById('cardPreview').innerHTML = `
+      <div class="card-date-line">${dateStr}</div>
+      <div class="card-title">${cnDate} 习惯日签</div>
+      <div class="card-subtitle">${mood}</div>
+      <div class="card-divider"></div>
+      <div class="card-habit-list">${list.map(h=>`
+        <div class="card-habit-item">
+          <div class="card-dot ${h.done?'done':'undone'}"></div>
+          <span class="card-habit-name ${h.done?'':'undone'}">${h.emoji} ${h.name}</span>
+          ${h.streak>0?`<span class="card-habit-streak">${h.streak}d</span>`:''}
+        </div>`).join('')}
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-footer">
+        <div>
+          <div class="card-summary-big">${done}<span style="font-size:16px;color:#bbb"> /${total}</span></div>
+          <div class="card-summary-label">今日习惯达成</div>
+        </div>
+        <div class="card-watermark">习惯手账<br>${pct}% 完成</div>
+      </div>`;
+  }
+
+  function downloadCard() {
+    const list = allHabits();
+    const total = list.length, done = list.filter(h=>h.done).length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const { d, dateStr, cnDate } = getDateInfo();
+    const canvas = document.getElementById('cardCanvas');
+    const sc = 2, lx = 28, w = 393;
+    const rowH = 26;
+    const h = 40+20+20+18+22+18+list.length*rowH+18+60+32;
+    canvas.width = w*sc; canvas.height = h*sc;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(sc, sc);
+    ctx.fillStyle = '#fafafa'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = '#efefef'; ctx.lineWidth=1; ctx.strokeRect(.5,.5,w-1,h-1);
+    let y = 34; ctx.textAlign='left';
+    ctx.font='10px sans-serif'; ctx.fillStyle='#bbb';
+    ctx.fillText(dateStr.toUpperCase(), lx, y); y+=20;
+    ctx.font='400 22px serif'; ctx.fillStyle='#111';
+    ctx.fillText(`${cnDate} 习惯日签`, lx, y); y+=16;
+    ctx.font='12px sans-serif'; ctx.fillStyle='#aaa';
+    ctx.fillText(pct===100?'全部完成':pct>=60?'进展不错':pct>0?'已经开始':'今天加油', lx, y); y+=22;
+    ctx.strokeStyle='#efefef'; ctx.beginPath(); ctx.moveTo(lx,y); ctx.lineTo(w-lx,y); ctx.stroke(); y+=18;
+    list.forEach(h => {
+      ctx.beginPath(); ctx.arc(lx+4, y-4, 3.5, 0, Math.PI*2);
+      ctx.fillStyle = h.done?'#111':'#e0e0e0'; ctx.fill();
+      ctx.font='13px sans-serif'; ctx.fillStyle=h.done?'#333':'#ccc'; ctx.textAlign='left';
+      ctx.fillText(`${h.emoji} ${h.name}`, lx+16, y);
+      if (h.streak>0) { ctx.font='11px sans-serif'; ctx.fillStyle='#bbb'; ctx.textAlign='right'; ctx.fillText(`${h.streak}d`, w-lx, y); }
+      y+=rowH;
+    });
+    ctx.strokeStyle='#efefef'; ctx.beginPath(); ctx.moveTo(lx,y); ctx.lineTo(w-lx,y); ctx.stroke(); y+=20;
+    ctx.font='400 36px serif'; ctx.fillStyle='#111'; ctx.textAlign='left'; ctx.fillText(`${done}`, lx, y+28);
+    ctx.font='14px sans-serif'; ctx.fillStyle='#bbb'; ctx.fillText(`/${total}`, lx+32, y+28);
+    ctx.font='11px sans-serif'; ctx.fillText('今日习惯达成', lx, y+46);
+    ctx.fillStyle='#ccc'; ctx.textAlign='right';
+    ctx.fillText('习惯手账', w-lx, y+22); ctx.fillText(`${pct}% 完成`, w-lx, y+38);
+    const link = document.createElement('a');
+    link.download = `习惯日签-${d.getMonth()+1}月${d.getDate()}日.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2000);
+  }
+
+  render();
+</script>
+</body>
+</html>
